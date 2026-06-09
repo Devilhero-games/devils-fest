@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Hook 'n' Chew RPG</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a0f;overflow:hidden;font-family:'Segoe UI',sans-serif;touch-action:none;user-select:none;}
+canvas{display:block;}
+.screen{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(8,6,14,0.97);}
+.screen.hide{display:none;}
+.game-logo{font-size:clamp(2rem,8vw,3.6rem);font-weight:900;color:#fff;letter-spacing:3px;text-shadow:0 0 40px #c0392b,0 0 80px #7b1a13;line-height:1;}
+.logo-hook{color:#e74c3c;}
+.game-sub{color:#a08060;font-size:clamp(0.7rem,3vw,1rem);letter-spacing:4px;margin:6px 0 28px;text-transform:uppercase;}
+.gBtn{background:linear-gradient(135deg,#c0392b,#7b1a13);color:#fff;border:none;border-radius:28px;padding:14px 40px;font-size:1rem;font-weight:700;letter-spacing:2px;cursor:pointer;margin:6px;transition:all .18s;box-shadow:0 4px 20px rgba(192,57,43,.4);}
+.gBtn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(192,57,43,.6);}
+.gBtn.gold{background:linear-gradient(135deg,#f39c12,#c27a00);box-shadow:0 4px 20px rgba(243,156,18,.4);}
+.gBtn.grey{background:#2a1e1a;border:1px solid #3d2218;box-shadow:none;}
+#hud{position:fixed;top:0;left:0;right:0;z-index:20;padding:8px 12px;background:linear-gradient(180deg,rgba(8,6,14,.95) 0%,transparent 100%);pointer-events:none;}
+#hud.hide{display:none;}
+.hud-row{display:flex;justify-content:space-between;align-items:center;}
+.hud-bars{display:flex;flex-direction:column;gap:4px;}
+.bar-row{display:flex;align-items:center;gap:5px;}
+.bar-lbl{font-size:9px;font-weight:700;color:#f5e6c8;width:22px;letter-spacing:1px;}
+.bar-bg{width:130px;height:9px;background:#1a0a06;border-radius:5px;border:1px solid rgba(255,255,255,.08);overflow:hidden;}
+#hpFill{height:100%;border-radius:5px;background:linear-gradient(90deg,#e74c3c,#c0392b);transition:width .25s;}
+#spFill{height:100%;border-radius:5px;background:linear-gradient(90deg,#3498db,#1a6aa0);transition:width .25s;}
+#xpFill{height:100%;border-radius:5px;background:linear-gradient(90deg,#f39c12,#c27a00);transition:width .25s;}
+.hud-mid{text-align:center;}
+.zone-lbl{color:#f39c12;font-size:11px;font-weight:700;letter-spacing:2px;}
+.wave-lbl{color:#a08060;font-size:9px;letter-spacing:1px;margin-top:2px;}
+.hud-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+.pill{background:rgba(20,12,8,.85);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:3px 9px;font-size:11px;color:#f5e6c8;font-weight:700;}
+#ctrl{position:fixed;bottom:0;left:0;right:0;z-index:20;display:flex;justify-content:space-between;align-items:flex-end;padding:8px 12px 10px;pointer-events:none;}
+#ctrl.hide{display:none;}
+.dpad{display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(2,46px);gap:4px;pointer-events:all;}
+.dp{background:rgba(30,15,8,.8);border:2px solid rgba(192,57,43,.45);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;cursor:pointer;transition:background .1s;-webkit-tap-highlight-color:transparent;}
+.dp:active,.dp.on{background:rgba(192,57,43,.5);}
+.abtns{display:flex;flex-direction:column;gap:5px;pointer-events:all;}
+.abrow{display:flex;gap:6px;justify-content:flex-end;}
+.ab{width:54px;height:54px;border-radius:50%;border:none;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;transition:all .12s;-webkit-tap-highlight-color:transparent;}
+.ab:active{transform:scale(.88);}
+.ab.red{background:rgba(192,57,43,.88);color:#fff;}
+.ab.blue{background:rgba(52,152,219,.88);color:#fff;}
+.ab.gold{background:rgba(243,156,18,.88);color:#1a0a00;}
+.ab.grn{background:rgba(39,174,96,.88);color:#fff;}
+#shopScreen{overflow-y:auto;padding:20px 12px 40px;}
+.shop-title{font-size:1.8rem;font-weight:900;color:#f39c12;letter-spacing:3px;margin-bottom:4px;}
+.shop-sub{color:#a08060;font-size:.75rem;letter-spacing:2px;margin-bottom:18px;}
+.shop-section{width:min(540px,96vw);text-align:left;margin-bottom:22px;}
+.sec-hd{font-size:1rem;font-weight:700;color:#f5e6c8;letter-spacing:2px;border-bottom:1px solid #3d2218;padding-bottom:5px;margin-bottom:12px;}
+.iap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.iap{background:#1a100a;border:2px solid #3d2218;border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;}
+.iap.hot{border-color:#f39c12;}
+.iap:hover{transform:translateY(-3px);border-color:#e74c3c;}
+.iap .hot-tag{position:absolute;top:0;right:0;background:#f39c12;color:#1a0a00;font-size:.65rem;font-weight:900;padding:2px 7px;border-radius:0 0 0 8px;}
+.iap-ico{font-size:2rem;margin-bottom:5px;}
+.iap-nm{font-size:.82rem;font-weight:700;color:#f5e6c8;letter-spacing:.5px;}
+.iap-desc{font-size:.68rem;color:#a08060;margin:3px 0 8px;line-height:1.3;}
+.iap-price{display:inline-block;background:#c0392b;color:#fff;font-size:.85rem;font-weight:700;border-radius:14px;padding:3px 12px;}
+.iap-price.g{background:linear-gradient(135deg,#f39c12,#c27a00);color:#1a0a00;}
+.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;width:min(540px,96vw);}
+.char-card{background:#1a100a;border:2px solid #3d2218;border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .18s;position:relative;}
+.char-card.sel{border-color:#f39c12;box-shadow:0 0 18px rgba(243,156,18,.3);}
+.char-card.own{border-color:#27ae60;}
+.char-card:hover{transform:translateY(-2px);}
+.char-ico{font-size:2.8rem;margin-bottom:4px;}
+.char-nm{font-size:.85rem;font-weight:700;color:#f5e6c8;letter-spacing:.5px;}
+.char-cls{font-size:.65rem;color:#a08060;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.stat-mini{display:flex;flex-direction:column;gap:2px;margin-bottom:8px;}
+.srow{display:flex;align-items:center;gap:4px;font-size:.65rem;color:#a08060;}
+.sbar{flex:1;height:4px;background:#0a0605;border-radius:2px;overflow:hidden;}
+.sbar-fill{height:100%;border-radius:2px;}
+.lock-veil{position:absolute;inset:0;background:rgba(8,6,14,.72);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;}
+.lock-ico{font-size:1.5rem;}
+.unlk-btn{background:#c0392b;color:#fff;border:none;border-radius:14px;padding:5px 12px;font-size:.75rem;font-weight:700;cursor:pointer;letter-spacing:.5px;}
+.unlk-btn.gem{background:linear-gradient(135deg,#8e44ad,#6c3483);}
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(60px);background:#1a100a;border:1px solid #f39c12;color:#f5e6c8;font-size:.88rem;font-weight:700;padding:8px 22px;border-radius:20px;z-index:100;transition:transform .38s cubic-bezier(.175,.885,.32,1.275);pointer-events:none;white-space:nowrap;letter-spacing:1px;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#combo{position:fixed;top:64px;right:12px;z-index:22;font-size:1.6rem;font-weight:900;color:#f39c12;text-shadow:0 0 18px rgba(243,156,18,.8);opacity:0;transition:opacity .3s;pointer-events:none;}
+.modal-bg{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;}
+.modal-bg.hide{display:none;}
+.modal{background:#1a100a;border:2px solid #f39c12;border-radius:16px;padding:28px 24px;max-width:340px;width:92%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.8);}
+.modal h3{font-size:1.4rem;font-weight:900;color:#f39c12;letter-spacing:2px;margin-bottom:6px;}
+.modal p{font-size:.83rem;color:#c0a080;margin-bottom:18px;line-height:1.5;}
+.modal-ico{font-size:3rem;margin-bottom:10px;}
+.modal-row{display:flex;gap:8px;justify-content:center;}
+.mBtn{padding:9px 22px;border-radius:18px;font-weight:700;font-size:.9rem;cursor:pointer;border:none;letter-spacing:1px;transition:all .15s;}
+.mBtn.yes{background:#c0392b;color:#fff;}
+.mBtn.yes:hover{background:#e74c3c;}
+.mBtn.no{background:#2a1e1a;color:#a08060;border:1px solid #3d2218;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud" class="hide">
+  <div class="hud-row">
+    <div class="hud-bars">
+      <div class="bar-row"><span class="bar-lbl">HP</span><div class="bar-bg"><div id="hpFill" style="width:100%"></div></div></div>
+      <div class="bar-row"><span class="bar-lbl">SP</span><div class="bar-bg"><div id="spFill" style="width:100%"></div></div></div>
+      <div class="bar-row"><span class="bar-lbl">XP</span><div class="bar-bg"><div id="xpFill" style="width:0%"></div></div></div>
+    </div>
+    <div class="hud-mid">
+      <div class="zone-lbl" id="zoneLbl">BUTCHER'S ALLEY</div>
+      <div class="wave-lbl" id="waveLbl">WAVE 1/3</div>
+    </div>
+    <div class="hud-right">
+      <div class="pill">🪙 <span id="goldH">0</span></div>
+      <div class="pill">💎 <span id="gemH">0</span></div>
+      <div class="pill">LV <span id="lvH">1</span></div>
+    </div>
+  </div>
+</div>
+<div id="combo"></div>
+<div id="ctrl" class="hide">
+  <div class="dpad">
+    <div></div><div class="dp" id="dU" ontouchstart="dk('u',1)" ontouchend="dk('u',0)">▲</div><div></div>
+    <div class="dp" id="dL" ontouchstart="dk('l',1)" ontouchend="dk('l',0)">◀</div>
+    <div></div>
+    <div class="dp" id="dR" ontouchstart="dk('r',1)" ontouchend="dk('r',0)">▶</div>
+  </div>
+  <div class="abtns">
+    <div class="abrow">
+      <button class="ab gold" ontouchstart="act('sp')">💥</button>
+      <button class="ab blue" ontouchstart="dk('u',1)" ontouchend="dk('u',0)">↑</button>
+    </div>
+    <div class="abrow">
+      <button class="ab grn" ontouchstart="act('hook')">🪝</button>
+      <button class="ab red" ontouchstart="act('atk')">🔪</button>
+    </div>
+  </div>
+</div>
+<div id="titleScreen" class="screen">
+  <div style="text-align:center;">
+    <div style="font-size:4rem;margin-bottom:8px;">🥩</div>
+    <div class="game-logo">HOOK <span class="logo-hook">'N'</span> CHEW</div>
+    <div class="game-sub">Action RPG · Slash · Hook · Devour</div>
+    <button class="gBtn" style="font-size:1.1rem;padding:16px 48px;" onclick="goMap()">▶ PLAY</button><br>
+    <button class="gBtn grey" onclick="openShop()">🛒 SHOP</button>
+    <button class="gBtn grey" onclick="openChars()">🦸 HEROES</button>
+  </div>
+</div>
+<div id="mapScreen" class="screen hide">
+  <div style="font-size:1.5rem;font-weight:900;color:#f5e6c8;letter-spacing:3px;margin-bottom:4px;">🗺 WORLD MAP</div>
+  <div style="color:#a08060;font-size:.75rem;letter-spacing:2px;margin-bottom:20px;">SELECT A ZONE</div>
+  <div id="mapGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:min(480px,94vw);"></div>
+  <div style="display:flex;gap:12px;margin-top:18px;">
+    <div class="pill" style="font-size:13px;">🪙 <span id="mapGold">150</span></div>
+    <div class="pill" style="font-size:13px;">💎 <span id="mapGem">0</span></div>
+    <div class="pill" style="font-size:13px;">⭐ <span id="mapScore">0</span></div>
+  </div>
+  <div style="margin-top:14px;display:flex;gap:8px;">
+    <button class="gBtn grey" style="padding:8px 18px;font-size:.82rem;" onclick="openShop()">🛒 SHOP</button>
+    <button class="gBtn grey" style="padding:8px 18px;font-size:.82rem;" onclick="openChars()">🦸 HEROES</button>
+    <button class="gBtn grey" style="padding:8px 18px;font-size:.82rem;" onclick="showTitle()">🏠 TITLE</button>
+  </div>
+</div>
+<div id="shopScreen" class="screen hide" style="justify-content:flex-start;padding-top:16px;">
+  <div class="shop-section">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+      <div class="shop-title">🛒 SHOP</div>
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <div class="pill">🪙 <span id="shopGold">0</span></div>
+        <div class="pill">💎 <span id="shopGem">0</span></div>
+      </div>
+    </div>
+    <div class="shop-sub">IN-APP PURCHASES · ₹20 – ₹500</div>
+    <div class="sec-hd">💎 GEM PACKS</div>
+    <div class="iap-grid" id="iapGrid"></div>
+    <div class="sec-hd" style="margin-top:18px;">🪙 COIN PACKS</div>
+    <div class="iap-grid" id="coinGrid"></div>
+    <div class="sec-hd" style="margin-top:18px;">🎒 BATTLE ITEMS</div>
+    <div class="iap-grid" id="itemGrid"></div>
+  </div>
+  <button class="gBtn grey" style="padding:8px 22px;font-size:.85rem;margin-top:4px;" onclick="closeShop()">← BACK</button>
+</div>
+<div id="charScreen" class="screen hide" style="justify-content:flex-start;padding-top:16px;overflow-y:auto;">
+  <div style="font-size:1.5rem;font-weight:900;color:#f39c12;letter-spacing:3px;margin-bottom:4px;text-align:center;">🦸 HEROES</div>
+  <div style="color:#a08060;font-size:.75rem;letter-spacing:2px;margin-bottom:16px;text-align:center;">TAP TO SELECT · UNLOCK WITH GOLD OR GEMS</div>
+  <div class="char-grid" id="charGrid"></div>
+  <button class="gBtn grey" style="padding:8px 22px;font-size:.85rem;margin-top:16px;" onclick="closeChars()">← BACK</button>
+</div>
+<div id="dieScreen" class="screen hide">
+  <div style="font-size:3.5rem;margin-bottom:8px;">💀</div>
+  <div style="font-size:2.2rem;font-weight:900;color:#e74c3c;letter-spacing:3px;">SLAUGHTERED</div>
+  <div style="color:#a08060;font-size:.85rem;margin:8px 0 22px;letter-spacing:1px;">You became tonight's special...</div>
+  <button class="gBtn" onclick="retryZone()">🔄 RETRY</button>
+  <button class="gBtn grey" onclick="goMap()">🗺 MAP</button>
+</div>
+<div id="winScreen" class="screen hide">
+  <div style="font-size:3rem;margin-bottom:8px;" id="winEmoji">🏆</div>
+  <div style="font-size:2rem;font-weight:900;color:#f39c12;letter-spacing:3px;" id="winTitle">ZONE CLEARED!</div>
+  <div style="color:#a08060;font-size:.85rem;margin:8px 0 6px;" id="winSub">Great work!</div>
+  <div style="font-size:1.5rem;margin-bottom:18px;" id="winStars"></div>
+  <button class="gBtn gold" onclick="goMap()">🗺 WORLD MAP</button>
+</div>
+<div class="modal-bg hide" id="modal">
+  <div class="modal">
+    <div class="modal-ico" id="mIco">💎</div>
+    <h3 id="mTitle">CONFIRM</h3>
+    <p id="mDesc">Are you sure?</p>
+    <div class="modal-row">
+      <button class="mBtn yes" id="mYes">CONFIRM</button>
+      <button class="mBtn no" onclick="closeModal()">CANCEL</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+const cv=document.getElementById('c');const cx=cv.getContext('2d');let W,H,GY;function rsz(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;GY=H-72;}rsz();window.addEventListener('resize',rsz);function loadSave(){try{return JSON.parse(localStorage.getItem('hncSave'))||{};}catch(e){return{};}}function doSave(){try{localStorage.setItem('hncSave',JSON.stringify({gold:G.gold,gems:G.gems,score:G.score,lv:G.lv,xp:G.xp,owned:G.owned,active:G.active,stars:ZONES.map(z=>z.stars),unlocked:ZONES.map(z=>z.unlocked)}));}catch(e){}}const sv=loadSave();const G={gold:sv.gold||200,gems:sv.gems||0,score:sv.score||0,lv:sv.lv||1,xp:sv.xp||0,xpNext:100,owned:sv.owned||[0],active:sv.active||0,zone:null,wave:0,kills:0,phase:'title'};const ZONES=[{id:0,name:"BUTCHER'S ALLEY",ico:"🏚️",diff:"EASY",unlocked:true,stars:0,waves:3,enemies:['rat','zombie'],bgA:'#18060a',bgB:'#0a0306',gC:'#3a1208',pC:'#5c1e0e',reward:{gold:40,nxt:1}},{id:1,name:"SLAUGHTER LANE",ico:"🏭",diff:"NORMAL",unlocked:false,stars:0,waves:3,enemies:['zombie','chef','rat'],bgA:'#06121a',bgB:'#030a0d',gC:'#0a3040',pC:'#0e4a5c',reward:{gold:70,nxt:2}},{id:2,name:"MEAT MARKET",ico:"🏪",diff:"NORMAL",unlocked:false,stars:0,waves:4,enemies:['chef','brute'],bgA:'#1a0e00',bgB:'#0d0700',gC:'#3a2800',pC:'#5c3c00',reward:{gold:100,nxt:3}},{id:3,name:"BLOOD RIVER",ico:"🌊",diff:"HARD",unlocked:false,stars:0,waves:4,enemies:['brute','chef','boss'],bgA:'#1a0000',bgB:'#0d0000',gC:'#3a0000',pC:'#5c0000',reward:{gold:150,nxt:4}},{id:4,name:"CURSED ABATTOIR",ico:"🏰",diff:"HARD",unlocked:false,stars:0,waves:5,enemies:['brute','boss'],bgA:'#0a001a',bgB:'#05000d',gC:'#180040',pC:'#280060',reward:{gold:200,nxt:5}},{id:5,name:"DEMON KITCHEN",ico:"🔥",diff:"BRUTAL",unlocked:false,stars:0,waves:5,enemies:['boss','brute','chef'],bgA:'#1a0800',bgB:'#0d0400',gC:'#3a1400',pC:'#5c1e00',reward:{gold:350,nxt:null}}];if(sv.unlocked)sv.unlocked.forEach((u,i)=>{if(ZONES[i])ZONES[i].unlocked=u;});if(sv.stars)sv.stars.forEach((s,i)=>{if(ZONES[i])ZONES[i].stars=s;});const HEROES=[{id:0,name:'BLADE BUTCHER',cls:'Slasher',ico:'🥩',atk:18,def:6,spd:5,sp:100,special:'Meat Cleave',free:true,goldCost:0,gemCost:0},{id:1,name:'HOOK MASTER',cls:'Trapper',ico:'🪝',atk:14,def:12,spd:6,sp:120,special:'Chain Grab',free:false,goldCost:150,gemCost:0},{id:2,name:'SMOKE BARON',cls:'Ranger',ico:'🍖',atk:16,def:6,spd:8,sp:100,special:'Smoke Screen',free:false,goldCost:250,gemCost:0},{id:3,name:'BONE WITCH',cls:'Mage',ico:'🦴',atk:24,def:4,spd:5,sp:150,special:'Bone Storm',free:false,goldCost:0,gemCost:60,premium:true},{id:4,name:'BLOOD KNIGHT',cls:'Tank',ico:'🧛',atk:12,def:22,spd:4,sp:80,special:'Iron Fortress',free:false,goldCost:0,gemCost:90,premium:true},{id:5,name:'FERAL RIPPER',cls:'Berserk',ico:'🐺',atk:28,def:3,spd:9,sp:130,special:'Blood Frenzy',free:false,goldCost:0,gemCost:130,premium:true},{id:6,name:'CURSED CHEF',cls:'Support',ico:'👨‍🍳',atk:15,def:10,spd:6,sp:110,special:'Toxic Stew',free:false,goldCost:0,gemCost:160,premium:true}];const EDEFS={rat:{w:26,h:22,hp:28,spd:2.2,atk:7,xp:8,gold:5,col:'#8B4513'},zombie:{w:34,h:50,hp:65,spd:1.1,atk:12,xp:15,gold:10,col:'#4a7a3a'},chef:{w:36,h:52,hp:90,spd:1.5,atk:16,xp:22,gold:16,col:'#ccc'},brute:{w:46,h:58,hp:180,spd:0.9,atk:26,xp:38,gold:28,col:'#8B0000'},boss:{w:62,h:70,hp:360,spd:1.2,atk:34,xp:90,gold:65,col:'#4a0080'}};let P,E,PX,SK;function initGame(){const h=HEROES[G.active];P={x:W/2,y:GY,w:40,h:50,hp:100+G.lv*5,mhp:100+G.lv*5,sp:h.sp,msp:h.sp,atk:h.atk+G.lv,def:h.def,spd:h.spd,vx:0,vy:0,jCd:0,sCd:0,hCd:0,anim:0};E=[];SK=0;PX=P.x;}function spawnWave(w){const zone=ZONES[G.zone];const count=2+w*2;const eTypes=zone.enemies;for(let i=0;i<count;i++){const et=eTypes[Math.floor(Math.random()*eTypes.length)];const ed=EDEFS[et];E.push({type:et,hp:ed.hp+w*10,mhp:ed.hp+w*10,x:Math.random()*W,y:20,w:ed.w,h:ed.h,spd:ed.spd,atk:ed.atk,xp:ed.xp,gold:ed.gold,vx:(Math.random()-0.5)*ed.spd,anim:0,dmg:0,dmgCd:0,col:ed.col});}}function goMap(){G.phase='map';updateMapUI();}function goZone(z){G.zone=z;G.wave=0;nextWave();}function nextWave(){G.wave++;if(G.wave>ZONES[G.zone].waves)return wonZone();initGame();spawnWave(G.wave);G.phase='play';document.getElementById('hud').classList.remove('hide');document.getElementById('ctrl').classList.remove('hide');document.getElementById('mapScreen').classList.add('hide');updateHUD();}function wonZone(){const z=ZONES[G.zone];G.gold+=z.reward.gold;if(z.reward.nxt!==null)ZONES[z.reward.nxt].unlocked=true;ZONES[G.zone].stars=Math.max(ZONES[G.zone].stars,3);G.phase='win';doSave();updateWinScreen();}function died(){G.phase='die';updateDieScreen();}function retryZone(){nextWave();}const K={};window.addEventListener('keydown',(e)=>{K[e.key.toLowerCase()]=1;});window.addEventListener('keyup',(e)=>{K[e.key.toLowerCase()]=0;});function dk(k,v){if(k==='u')K['w']=K['arrowup']=v;if(k==='l')K['a']=K['arrowleft']=v;if(k==='r')K['d']=K['arrowright']=v;}function act(a){if(a==='atk'&&G.phase==='play')attack();if(a==='sp'&&G.phase==='play')special();if(a==='hook'&&G.phase==='play')hook();}function attack(){if(P.anim>0)return;P.anim=8;for(const e of E){const dx=e.x-P.x,dy=e.y-P.y,d=Math.hypot(dx,dy);if(d<80){const dmg=Math.max(1,P.atk-e.mhp*0.1+Math.random()*5);e.hp-=dmg;e.dmg=dmg;e.dmgCd=20;if(e.hp<=0){E.splice(E.indexOf(e),1);G.gold+=e.gold;G.xp+=e.xp;SK++;}}}}function special(){if(P.sp<30||P.sCd>0)return;P.sp-=30;P.sCd=60;P.anim=12;for(const e of E){const dmg=P.atk*1.5+Math.random()*10;e.hp-=dmg;e.dmg=dmg;e.dmgCd=20;if(e.hp<=0){E.splice(E.indexOf(e),1);G.gold+=e.gold;G.xp+=e.xp;SK++;}}if(SK%5===0)document.getElementById('combo').style.opacity=1;}function hook(){if(P.hCd>0||E.length===0)return;P.hCd=40;const e=E[0];const dmg=P.atk*0.7;e.hp-=dmg;e.dmg=dmg;e.dmgCd=20;if(e.hp<=0){E.splice(0,1);G.gold+=e.gold;G.xp+=e.xp;}}function update(){if(G.phase!=='play')return;if(K['w']||K['arrowup'])P.vy=-4;if(K['a']||K['arrowleft'])P.vx=-P.spd;if(K['d']||K['arrowright'])P.vx=P.spd;if(!K['a']&&!K['arrowleft']&&!K['d']&&!K['arrowright'])P.vx*=0.8;P.vy+=0.2;P.y+=P.vy;if(P.y>=GY){P.y=GY;P.vy=0;}P.x+=P.vx;if(P.x<20)P.x=20;if(P.x>W-20)P.x=W-20;for(const e of E){const dx=P.x-e.x,d=Math.hypot(dx,e.y-P.y);if(d<150)e.vx=dx/d*e.spd;else e.vx*=0.9;e.x+=e.vx;e.y+=1;if(e.y>H)E.splice(E.indexOf(e),1);if(Math.hypot(e.x-P.x,e.y-P.y)<40){const dmg=Math.max(0,e.atk-P.def+Math.random()*3);P.hp-=dmg;if(P.hp<=0)return died();}}if(P.anim>0)P.anim--;if(P.jCd>0)P.jCd--;if(P.sCd>0)P.sCd--;if(P.hCd>0)P.hCd--;for(const e of E)if(e.dmgCd>0)e.dmgCd--;P.sp=Math.min(P.msp,P.sp+0.5);if(E.length===0)nextWave();updateHUD();}function draw(){const zone=ZONES[G.zone];const grd=cx.createLinearGradient(0,0,W,H);grd.addColorStop(0,zone.bgA||'#0a0a0f');grd.addColorStop(1,zone.bgB||'#0a0a0f');cx.fillStyle=grd;cx.fillRect(0,0,W,H);cx.fillStyle=zone.gC||'#222';cx.fillRect(0,GY,W,72);for(const e of E){cx.fillStyle=e.col;cx.fillRect(e.x-e.w/2,e.y-e.h,e.w,e.h);if(e.dmgCd>0){cx.fillStyle='#ff6b6b';cx.font='bold 12px Arial';cx.textAlign='center';cx.fillText('-'+Math.floor(e.dmg),e.x,e.y-e.h-5);}}cx.fillStyle=zone.pC||'#e74c3c';cx.fillRect(P.x-20,P.y-25,40,50);cx.fillStyle='#000';cx.fillRect(P.x-8,P.y-20,5,5);cx.fillRect(P.x+3,P.y-20,5,5);}function updateHUD(){document.getElementById('hpFill').style.width=(P.hp/P.mhp*100)+'%';document.getElementById('spFill').style.width=(P.sp/P.msp*100)+'%';document.getElementById('xpFill').style.width=(G.xp%G.xpNext/G.xpNext*100)+'%';document.getElementById('goldH').innerText=G.gold;document.getElementById('gemH').innerText=G.gems;document.getElementById('lvH').innerText=G.lv;document.getElementById('zoneLbl').innerText=ZONES[G.zone].name;document.getElementById('waveLbl').innerText='WAVE '+G.wave+'/'+ZONES[G.zone].waves;}function updateMapUI(){const grid=document.getElementById('mapGrid');grid.innerHTML='';for(const z of ZONES){const card=document.createElement('div');card.style.cssText='background:#1a100a;border:2px solid '+(z.unlocked?'#f39c12':'#444')+';border-radius:12px;padding:12px;text-align:center;cursor:'+(z.unlocked?'pointer':'default')+';';card.innerHTML=z.ico+'<br><strong>'+z.name+'</strong><br><small>'+z.diff+'</small><br>⭐'.repeat(z.stars);if(z.unlocked)card.onclick=()=>goZone(z.id);grid.appendChild(card);}document.getElementById('mapGold').innerText=G.gold;document.getElementById('mapGem').innerText=G.gems;document.getElementById('mapScore').innerText=G.score;}function updateWinScreen(){document.getElementById('winTitle').innerText='ZONE CLEARED!';document.getElementById('winStars').innerText='⭐⭐⭐';document.getElementById('hud').classList.add('hide');document.getElementById('ctrl').classList.add('hide');document.getElementById('winScreen').classList.remove('hide');}function updateDieScreen(){document.getElementById('dieScreen').classList.remove('hide');document.getElementById('hud').classList.add('hide');document.getElementById('ctrl').classList.add('hide');}function showTitle(){G.phase='title';document.getElementById('titleScreen').classList.remove('hide');document.getElementById('mapScreen').classList.add('hide');document.getElementById('winScreen').classList.add('hide');document.getElementById('dieScreen').classList.add('hide');document.getElementById('hud').classList.add('hide');document.getElementById('ctrl').classList.add('hide');}function openShop(){document.getElementById('shopScreen').classList.remove('hide');document.getElementById('titleScreen').classList.add('hide');document.getElementById('mapScreen').classList.add('hide');renderShop();}function closeShop(){document.getElementById('shopScreen').classList.add('hide');if(G.phase==='title')document.getElementById('titleScreen').classList.remove('hide');else document.getElementById('mapScreen').classList.remove('hide');}function openChars(){document.getElementById('charScreen').classList.remove('hide');document.getElementById('titleScreen').classList.add('hide');document.getElementById('mapScreen').classList.add('hide');renderChars();}function closeChars(){document.getElementById('charScreen').classList.add('hide');if(G.phase==='title')document.getElementById('titleScreen').classList.remove('hide');else document.getElementById('mapScreen').classList.remove('hide');}function renderShop(){document.getElementById('shopGold').innerText=G.gold;document.getElementById('shopGem').innerText=G.gems;const iaps=[{ico:'💎',name:'50 Gems',desc:'Unlock Premium',price:99,cur:'₹',type:'gem',amount:50},{ico:'💎',name:'200 Gems',desc:'Best Value!',price:299,cur:'₹',type:'gem',amount:200,hot:true},{ico:'💎',name:'500 Gems',desc:'Mega Pack',price:799,cur:'₹',type:'gem',amount:500}];const coins=[{ico:'🪙',name:'500 Coins',desc:'Battle Fund',price:49,cur:'₹',type:'coin',amount:500},{ico:'🪙',name:'2000 Coins',desc:'Great Deal',price:149,cur:'₹',type:'coin',amount:2000,hot:true},{ico:'🪙',name:'5000 Coins',desc:'Epic Bundle',price:399,cur:'₹',type:'coin',amount:5000}];let html='';for(const iap of iaps)html+='<div class="iap'+(iap.hot?' hot':'')+'"><'+(iap.hot?'div class="hot-tag">HOT</div>':'')+' <div class="iap-ico">'+iap.ico+'</div><div class="iap-nm">'+iap.name+'</div><div class="iap-desc">'+iap.desc+'</div><div class="iap-price g">'+iap.price+' '+iap.cur+'</div></div>';document.getElementById('iapGrid').innerHTML=html;html='';for(const coin of coins)html+='<div class="iap'+(coin.hot?' hot':'')+'"><'+(coin.hot?'div class="hot-tag">HOT</div>':'')+' <div class="iap-ico">'+coin.ico+'</div><div class="iap-nm">'+coin.name+'</div><div class="iap-desc">'+coin.desc+'</div><div class="iap-price">'+coin.price+' '+coin.cur+'</div></div>';document.getElementById('coinGrid').innerHTML=html;document.getElementById('itemGrid').innerHTML='<div class="iap" style="opacity:0.5;"><div class="iap-ico">🎁</div><div class="iap-nm">Coming Soon</div></div>';}function renderChars(){const grid=document.getElementById('charGrid');grid.innerHTML='';for(const h of HEROES){const owned=G.owned.includes(h.id);const card=document.createElement('div');card.className='char-card'+(G.active===h.id?' sel':'')+(owned?' own':'');let html='<div class="char-ico">'+h.ico+'</div><div class="char-nm">'+h.name+'</div><div class="char-cls">'+h.cls+'</div>';html+='<div class="stat-mini"><div class="srow">ATK <div class="sbar" style="background-color:#e74c3c;"><div class="sbar-fill" style="width:'+(h.atk/30*100)+'%;background:#e74c3c;"></div></div></div>';html+='<div class="srow">DEF <div class="sbar" style="background-color:#3498db;"><div class="sbar-fill" style="width:'+(h.def/25*100)+'%;background:#3498db;"></div></div></div></div>';if(!owned){html+='<div class="lock-veil"><div class="lock-ico">🔒</div><button class="unlk-btn'+(h.gemCost>0?' gem':'')+"\" onclick=\"unlockChar("+h.id+\")\">"+(h.gemCost>0?'💎 '+h.gemCost:'🪙 '+h.goldCost)+'</button></div>';}card.innerHTML=html;if(owned)card.onclick=()=>selectChar(h.id);grid.appendChild(card);}}function selectChar(id){G.active=id;doSave();renderChars();}function unlockChar(id){const h=HEROES[id];if(h.gemCost>0&&G.gems>=h.gemCost){G.gems-=h.gemCost;G.owned.push(id);doSave();renderChars();}else if(h.goldCost>0&&G.gold>=h.goldCost){G.gold-=h.goldCost;G.owned.push(id);doSave();renderChars();}}function closeModal(){document.getElementById('modal').classList.add('hide');}let lastTime=Date.now();function loop(){const now=Date.now(),dt=(now-lastTime)/16.67;lastTime=now;update();draw();requestAnimationFrame(loop);}loop();showTitle();
+</script>
+</body>
+</html>
